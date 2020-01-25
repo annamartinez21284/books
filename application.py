@@ -6,6 +6,7 @@ from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from werkzeug.security import check_password_hash, generate_password_hash
+from helpers import login_required
 
 app = Flask(__name__)
 
@@ -50,8 +51,9 @@ def register():
       db.execute("INSERT INTO users (name, hash) VALUES (:name, :hash)", {"name": name, "hash": hash})
       db.commit()
     except:
-      return render_templat("apology.html", text="User already exists or something else wrong.")
+      return render_template("apology.html", text="User already exists or something else wrong.")
     session["username"] = user
     return render_template("index.html")
 
-    session
+  else:
+    return render_template("register.html")
