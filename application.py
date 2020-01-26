@@ -28,10 +28,13 @@ db = scoped_session(sessionmaker(bind=engine))
 
 
 @app.route("/", methods=["GET", "POST"])
-@login_required
+#@login_required REACTIVATE LATER??
 def index():
   session.clear()
-  return render_template("index.html")
+  if request.method == "POST":
+    return render_template("index.html")
+  else:
+    return render_template("login.html")
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -39,12 +42,15 @@ def register():
   if request.method == "POST":
     user = request.form.get("username")
     if user == None:
+      print("STOP BUG 1")
       return render_template("apology.html", text="Please choose username.")
 
     if not request.form.get("password") or not request.form.get("confirmation"):
+      print("STOP BUG 2")
       return render_template("apology.html", text="Pls provide a password and confirm it.")
     hash = generate_password_hash(request.form.get("password"), method='pbkdf2:sha256', salt_length=8)
     if not check_password_hash(hash, request.form.get("confirmation")):
+      print("STOP BUG 3")
       return render_template("apology.html", text="Password and confirmation do not match.")
 
     try: # how do I know whicherror to catch if I dont know which error will occur? duplication, connection error, syntax error...?
