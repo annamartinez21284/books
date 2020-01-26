@@ -54,9 +54,10 @@ def register():
       return render_template("apology.html", text="Password and confirmation do not match.")
 
     try: # how do I know whicherror to catch if I dont know which error will occur? duplication, connection error, syntax error...?
-      db.execute("INSERT INTO users (name, hash) VALUES (:name, :hash)", {"name": name, "hash": hash})
+      db.execute("INSERT INTO users (name, hash) VALUES (:name, :hash)", {"name": user, "hash": hash})
       db.commit()
     except:
+      print("STOP BUG 4")
       return render_template("apology.html", text="User already exists or something else wrong.")
     session["username"] = user
     return render_template("index.html")
