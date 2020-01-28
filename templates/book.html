@@ -1,0 +1,12 @@
+{% extends "outerlayout.html" %}
+
+{% block body %}
+
+Title: {{book.title}} <br>
+Author: {{book.author}} <br>
+ISBN: {{book.isbn}} <br>
+Publication year: {{book.year}} <br>
+Goodreads average rating: {{res["books"][0].average_rating}} <br>
+Goodreads number of ratings: {{res["books"][0]["ratings_count"]}} <br>
+
+{% endblock %}

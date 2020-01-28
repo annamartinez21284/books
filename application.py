@@ -102,7 +102,7 @@ def search():
     results = db.execute("SELECT * FROM books WHERE (isbn ILIKE '%' || :input || '%') OR (title ILIKE '%' || :input || '%') OR (author ILIKE '%' || :input || '%')", {"input": input, "input": input, "input": input})
     # when fetching more than 1 row, array/dict is returned, but not None, hence use rowcount (Apparently)
     if results.rowcount == 0:
-      flash("Search yields no result.")
+      flash("Search yields no result among my 5000 books.")
       return redirect("/")
     # render search results w/ links to single book pages
     return render_template("results.html", results=results.fetchall())
@@ -113,6 +113,8 @@ def search():
 def view_book(isbn):
   #user_id ="108797443"
   key ="okE6HOfUm5bzxE11NbAZmw"
+  # check. r.status_code - do some try except thing
   res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": key, "isbns": isbn})
   print(f"JSON RESULT {res.json()}")
-  return render_template("books.html", res=res)
+  book = db.execute("SELECT * FROM books WHERE isbn = :isbn", {"isbn": isbn}).fetchone()
+  return render_template("book.html", book=book, res=res.json())
