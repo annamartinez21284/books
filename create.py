@@ -14,7 +14,7 @@ Session = sessionmaker(bind=engine)
 # create a session
 db = Session()
 
-db.execute("CREATE TABLE users (id SERIAL PRIMARY KEY, name VARCHAR NOT NULL, hash VARCHAR NOT NULL)")
-db.execute("CREATE TABLE books (isbn VARCHAR PRIMARY KEY, title VARCHAR NOT NULL, author VARCHAR, year INTEGER)")
+db.execute("CREATE TABLE users (id SERIAL PRIMARY KEY, name VARCHAR UNIQUE NOT NULL, hash VARCHAR NOT NULL)")
+db.execute("CREATE TABLE books (isbn VARCHAR PRIMARY KEY, title VARCHAR NOT NULL, author VARCHAR, year VARCHAR)")
 db.execute("CREATE TABLE reviews (id SERIAL PRIMARY KEY, rating INTEGER, user_id INTEGER REFERENCES users, isbn VARCHAR REFERENCES books, CHECK (rating > 0 AND rating < 6))")
 db.commit()

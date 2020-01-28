@@ -1,6 +1,7 @@
 import os
+import requests
 
-from flask import Flask, session, request, render_template
+from flask import Flask, session, request, render_template, redirect, flash
 from flask_session import Session
 #from flask_sqlalchemy import SQLAlchemy # I added this I think
 from sqlalchemy import create_engine
@@ -28,20 +29,16 @@ db = scoped_session(sessionmaker(bind=engine))
 
 
 @app.route("/", methods=["GET", "POST"])
-#@login_required REACTIVATE LATER??
+@login_required
 def index():
-  session.clear()
-  if request.method == "POST":
-    return render_template("index.html")
-  else:
-    return render_template("login.html")
+  return render_template("index.html")
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
   session.clear()
   if request.method == "POST":
-    user = request.form.get("username")
-    if user == None:
+    name = request.form.get("username")
+    if name == None:
       print("STOP BUG 1")
       return render_template("apology.html", text="Please choose username.")
 
@@ -54,13 +51,68 @@ def register():
       return render_template("apology.html", text="Password and confirmation do not match.")
 
     try: # how do I know whicherror to catch if I dont know which error will occur? duplication, connection error, syntax error...?
-      db.execute("INSERT INTO users (name, hash) VALUES (:name, :hash)", {"name": user, "hash": hash})
+      db.execute("INSERT INTO users (name, hash) VALUES (:name, :hash)", {"name": name, "hash": hash})
       db.commit()
     except:
       print("STOP BUG 4")
       return render_template("apology.html", text="User already exists or something else wrong.")
-    session["username"] = user
-    return render_template("index.html")
+    #session["username"] = name
+    session["id"] = db.execute("SELECT id FROM users WHERE name= :name", {"name": name[0]}).fetchone()[0]
+    return redirect ("/") #why not render_template("index.html")?
 
   else:
     return render_template("register.html")
+
+@app.route("/login", methods = ["GET", "POST"])
+def login():
+  session.clear()
+  if request.method == "POST":
+    if not (request.form.get("username") and request.form.get("password")):
+      return render_template("apology.html", text="Please provide username and password.")
+    name = db.execute("SELECT name FROM users WHERE name= :name", {"name": request.form.get("username")}).fetchone()
+    print(f"I GOT THE NAME AS {name}")
+    if not name:
+      return render_template("apology.html", text="No such user.")
+    hash = db.execute("SELECT hash FROM users WHERE name= :name", {"name": request.form.get("username")}).fetchone()
+    print(f"I GOT THE HASH AS {hash}")
+    if not check_password_hash(hash[0], request.form.get("password")):
+      return render_template("apology.html", text="Incorrect password.")
+    #session["username"] = name[0]
+    session["id"] = db.execute("SELECT id FROM users WHERE name= :name", {"name": name[0]}).fetchone()[0]
+    sid = session["id"]
+    print(f"I GOT SESH USER STORED AS {sid}")
+    return render_template("index.html")
+  else:
+    return render_template("login.html")
+
+@app.route("/logout", methods = ["GET", "POST"])
+def logout():
+  session.clear()
+  return redirect("/")
+
+@app.route("/search", methods = ["GET", "POST"])
+@login_required
+def search():
+  if request.method == "POST":
+    input = request.form.get("input")
+    if not input:
+      flash("Please provide a search term.")
+      return redirect("/")
+    # get list of possible result rows
+    results = db.execute("SELECT * FROM books WHERE (isbn ILIKE '%' || :input || '%') OR (title ILIKE '%' || :input || '%') OR (author ILIKE '%' || :input || '%')", {"input": input, "input": input, "input": input})
+    # when fetching more than 1 row, array/dict is returned, but not None, hence use rowcount (Apparently)
+    if results.rowcount == 0:
+      flash("Search yields no result.")
+      return redirect("/")
+    # render search results w/ links to single book pages
+    return render_template("results.html", results=results.fetchall())
+  return redirect("/")
+
+@app.route("/view_book/<isbn>", methods = ["GET", "POST"])
+@login_required
+def view_book(isbn):
+  #user_id ="108797443"
+  key ="okE6HOfUm5bzxE11NbAZmw"
+  res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": key, "isbns": isbn})
+  print(f"JSON RESULT {res.json()}")
+  return render_template("books.html", res=res)
