@@ -40,7 +40,6 @@ def register():
   if request.method == "POST":
     name = request.form.get("username")
     if name == None:
-      print("STOP BUG 1")
       flash("Please choose username.")
 
     if not request.form.get("password") or not request.form.get("confirmation"):
@@ -54,11 +53,11 @@ def register():
     try: # how do I know whicherror to catch if I dont know which error will occur? duplication, connection error, syntax error...?
       db.execute("INSERT INTO users (name, hash) VALUES (:name, :hash)", {"name": name, "hash": hash})
       db.commit()
-      print("THIS REGISTRATION WORKED")
+
     except:
       flash("User already exists or something else wrong.")
       return render_template("register.html")
-    #session["username"] = name
+
     session["id"] = db.execute("SELECT id FROM users WHERE name= :name", {"name": name}).fetchone()[0]
     return redirect ("/") #why not render_template("index.html")?
 
@@ -157,7 +156,7 @@ def books_api(isbn):
 
   # get review count and average rating
   reviews = db.execute("SELECT AVG(rating) AS average_score, COUNT(*) AS review_count FROM reviews WHERE isbn= :isbn", {"isbn": isbn}).fetchone()
-  print (f"REVIEWS ARE: {reviews}")
+  # need the below because AVG returns Decimal which is not serializable in json
   avg_score = json.dumps(float(reviews.average_score))
-  print(f"AVERAGE SCORE: {avg_score}")
+
   return jsonify({"title": book.title, "author": book.author, "year": book.year, "isbn": book.isbn, "review_count": reviews.review_count, "average_score": avg_score})
