@@ -1,12 +1,40 @@
-{% extends "outerlayout.html" %}
+{% extends "innerlayout.html" %}
 
 {% block body %}
-
+<br>
+<div class="container">
 Title: {{book.title}} <br>
 Author: {{book.author}} <br>
 ISBN: {{book.isbn}} <br>
 Publication year: {{book.year}} <br>
 Goodreads average rating: {{res["books"][0].average_rating}} <br>
 Goodreads number of ratings: {{res["books"][0]["ratings_count"]}} <br>
+Anna's Site reviews:
+{% for review in reviews %}
+  Rating: {{review.rating}}, Review: {{review.review}}<br>
+{% endfor %}
+</div>
+<br>
+
+<form class="form-searcher" type="submit" action="{{ url_for('review', isbn=book.isbn) }}" method="post">
+  Rating:
+  <fieldset >
+    <input name="rating" type="radio" class="radio" value="1" id="1" required>
+    <label for="1">  1 </label>
+    <input name="rating" type="radio" class="radio" value="2" id="2" required>
+    <label for="2">  2 </label>
+    <input name="rating" type="radio" class="radio" value="3" id="3" required>
+    <label for="3">  3 </label>
+    <input name="rating" type="radio" class="radio" value="4" id="4" required>
+    <label for="4">  4 </label>
+    <input name="rating" type="radio" class="radio" value="5" id="5" required>
+    <label for="5">  5 </label>
+  </fieldset>
+  <br>
+  <textarea name="review" type="text" class="form-control" placeholder="Review" required></textarea>
+
+  <button class="btn btn-lg btn-primary btn-block" type="submit">Submit</button>
+
+</form>
 
 {% endblock %}

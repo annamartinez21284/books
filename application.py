@@ -1,7 +1,7 @@
 import os
 import requests
 
-from flask import Flask, session, request, render_template, redirect, flash
+from flask import Flask, session, request, render_template, redirect, flash, url_for
 from flask_session import Session
 #from flask_sqlalchemy import SQLAlchemy # I added this I think
 from sqlalchemy import create_engine
@@ -36,28 +36,32 @@ def index():
 @app.route("/register", methods=["GET", "POST"])
 def register():
   session.clear()
+
   if request.method == "POST":
     name = request.form.get("username")
     if name == None:
       print("STOP BUG 1")
-      return render_template("apology.html", text="Please choose username.")
+      flash("Please choose username.")
 
     if not request.form.get("password") or not request.form.get("confirmation"):
       print("STOP BUG 2")
-      return render_template("apology.html", text="Pls provide a password and confirm it.")
+      flash("Pls provide a password and confirm it.")
+      return render_template("register.html")
     hash = generate_password_hash(request.form.get("password"), method='pbkdf2:sha256', salt_length=8)
     if not check_password_hash(hash, request.form.get("confirmation")):
       print("STOP BUG 3")
-      return render_template("apology.html", text="Password and confirmation do not match.")
+      return flash("Password and confirmation do not match.")
+      return render_template("register.html")
 
     try: # how do I know whicherror to catch if I dont know which error will occur? duplication, connection error, syntax error...?
       db.execute("INSERT INTO users (name, hash) VALUES (:name, :hash)", {"name": name, "hash": hash})
       db.commit()
+      print("THIS REGISTRATION WORKED")
     except:
-      print("STOP BUG 4")
-      return render_template("apology.html", text="User already exists or something else wrong.")
+      flash("User already exists or something else wrong.")
+      return render_template("register.html")
     #session["username"] = name
-    session["id"] = db.execute("SELECT id FROM users WHERE name= :name", {"name": name[0]}).fetchone()[0]
+    session["id"] = db.execute("SELECT id FROM users WHERE name= :name", {"name": name}).fetchone()[0]
     return redirect ("/") #why not render_template("index.html")?
 
   else:
@@ -68,16 +72,21 @@ def login():
   session.clear()
   if request.method == "POST":
     if not (request.form.get("username") and request.form.get("password")):
-      return render_template("apology.html", text="Please provide username and password.")
+      flash("Please provide username and password.")
+      return render_template("login.html")
     name = db.execute("SELECT name FROM users WHERE name= :name", {"name": request.form.get("username")}).fetchone()
     print(f"I GOT THE NAME AS {name}")
+
     if not name:
-      return render_template("apology.html", text="No such user.")
+      flash("No such user.")
+      return render_template("login.html")
     hash = db.execute("SELECT hash FROM users WHERE name= :name", {"name": request.form.get("username")}).fetchone()
     print(f"I GOT THE HASH AS {hash}")
     if not check_password_hash(hash[0], request.form.get("password")):
-      return render_template("apology.html", text="Incorrect password.")
-    #session["username"] = name[0]
+      flash("Incorrect password.")
+      return render_template("login.html")
+
+    # store user's sesh ID
     session["id"] = db.execute("SELECT id FROM users WHERE name= :name", {"name": name[0]}).fetchone()[0]
     sid = session["id"]
     print(f"I GOT SESH USER STORED AS {sid}")
@@ -100,7 +109,7 @@ def search():
       return redirect("/")
     # get list of possible result rows
     results = db.execute("SELECT * FROM books WHERE (isbn ILIKE '%' || :input || '%') OR (title ILIKE '%' || :input || '%') OR (author ILIKE '%' || :input || '%')", {"input": input, "input": input, "input": input})
-    # when fetching more than 1 row, array/dict is returned, but not None, hence use rowcount (Apparently)
+    # when fetching more than 1 row, array/dict is returned, but not None, even if empty, hence use rowcount (Apparently)
     if results.rowcount == 0:
       flash("Search yields no result among my 5000 books.")
       return redirect("/")
@@ -113,8 +122,32 @@ def search():
 def view_book(isbn):
   #user_id ="108797443"
   key ="okE6HOfUm5bzxE11NbAZmw"
-  # check. r.status_code - do some try except thing
+  # Make API request for Goodreads ratings info & check status quote
   res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": key, "isbns": isbn})
-  print(f"JSON RESULT {res.json()}")
+  if res.status_code != 200:
+      raise Exception("ERROR: API request unsuccessful.")
+  # get author, etc from my DB
   book = db.execute("SELECT * FROM books WHERE isbn = :isbn", {"isbn": isbn}).fetchone()
-  return render_template("book.html", book=book, res=res.json())
+  reviews = db.execute("SELECT * FROM reviews WHERE isbn = :isbn",{"isbn": isbn}).fetchall()
+  return render_template("book.html", book=book, res=res.json(), reviews=reviews)
+
+@app.route("/review/<isbn>", methods = ["GET", "POST"])
+@login_required
+def review(isbn):
+  if request.method == "POST":
+    rating = request.form.get("rating")
+    review = request.form.get("review")
+    reviewed = db.execute("SELECT * FROM reviews WHERE isbn= :isbn AND user_id= :user_id", {"isbn": isbn, "user_id": session["id"]}).fetchone()
+    if not reviewed:
+      try:
+        db.execute("INSERT INTO reviews (rating, user_id, isbn, review) VALUES (:rating, :user_id, :isbn, :review)", {"rating": rating, "user_id": session["id"], "isbn": isbn, "review": review})
+        db.commit()
+        flash("Review submitted.")
+        return redirect(url_for('view_book', isbn=isbn))
+      except:
+        flash("Some DB error occured.")
+        return redirect(url_for('view_book', isbn=isbn))
+    else:
+      flash("You have already reviewed this book.")
+      return redirect(url_for('view_book', isbn=isbn))
+  return redirect(url_for('view_book', isbn=isbn))

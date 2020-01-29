@@ -1,13 +1,12 @@
-{% extends "outerlayout.html" %}
+{% extends "innerlayout.html" %}
 
 {% block body %}
+<br><br><br>
 
-<form class="form-signin" type="submit" action="/search" method="post">
-  <input name="input" type="text" class="form-control" placeholder="ISBN, Title, Author">
+  <form class="form-searcher" type="submit" action="/search" method="post">
+    <input name="input" type="text" class="form-control" placeholder="ISBN, Title, Author">
 
-  <button class="btn btn-lg btn-primary btn-block" type="submit">Search</button>
+    <button class="btn btn-lg btn-primary btn-block" type="submit">Search</button>
 
-
-</form>
-
+  </form>
 {% endblock %}

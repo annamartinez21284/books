@@ -1,12 +1,15 @@
-{% extends "outerlayout.html" %}
+{% extends "innerlayout.html" %}
 
 {% block body %}
 
-  <form action="/view_book" method="post">
+<br>
+
   {% for book in results %}
+
     <li><a href="{{ url_for('view_book', isbn=book.isbn) }}">ISBN: {{book.isbn}}, Title: {{book.title}}, Author: {{book.author}}</a></li>
+
   {% endfor %}
 
-  </form>
+
 
 {% endblock %}

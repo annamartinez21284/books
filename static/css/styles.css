@@ -1,11 +1,81 @@
- body {
-  display: block;
-  margin: 0 auto;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+body {
+ display: block;
+ margin: 0 auto;
+ top: 0;
+ left: 0;
+ right: 0;
+ bottom: 0;
 
-  text-align: center;
-  position: absolute;
+ text-align: center;
+ position: absolute;
+ background-color: coral;
+}
+
+body {
+ height: 100%;
+}
+
+main body {
+ display: -ms-flexbox;
+ display: -webkit-box;
+ display: flex;
+ -ms-flex-align: center;
+ -ms-flex-pack: center;
+ -webkit-box-align: center;
+ align-items: center;
+ -webkit-box-pack: center;
+ justify-content: center;
+ padding-top: 40px;
+ padding-bottom: 40px;
+ background-color: coral;
+}
+
+
+.form-searcher{
+width: 50%;
+<!-- 330 -->
+max-width: 330px;
+padding: 15px;
+margin: 0 auto;
+background-color: pink;
+
+}
+
+.form-searcher .checkbox {
+ font-weight: 400;
+}
+.form-searcher .form-control {
+ position: relative;
+ box-sizing: border-box;
+ height: auto;
+ padding: 10px;
+ font-size: 16px;
+}
+.form-searcher .form-control:focus {
+ z-index: 2;
+}
+.form-searcher input[type="text"] {
+ margin-bottom: -1px;
+ border-bottom-right-radius: 0;
+ border-bottom-left-radius: 0;
+}
+
+label {
+  float: left;
+  clear: none;
+  display: block;
+  padding: 2px 1em 0 0;
+}
+
+input[type=radio],
+input.radio {
+  float: left;
+  clear: none;
+  margin: 2px 0 0 2px;
+
+}
+
+
+fieldset {
+  overflow: hidden
 }
