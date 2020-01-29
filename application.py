@@ -1,7 +1,7 @@
 import os
 import requests
 
-from flask import Flask, session, request, render_template, redirect, flash, url_for
+from flask import Flask, session, request, render_template, redirect, flash, url_for, jsonify, json
 from flask_session import Session
 #from flask_sqlalchemy import SQLAlchemy # I added this I think
 from sqlalchemy import create_engine
@@ -44,13 +44,11 @@ def register():
       flash("Please choose username.")
 
     if not request.form.get("password") or not request.form.get("confirmation"):
-      print("STOP BUG 2")
       flash("Pls provide a password and confirm it.")
       return render_template("register.html")
     hash = generate_password_hash(request.form.get("password"), method='pbkdf2:sha256', salt_length=8)
     if not check_password_hash(hash, request.form.get("confirmation")):
-      print("STOP BUG 3")
-      return flash("Password and confirmation do not match.")
+      flash("Password and confirmation do not match.")
       return render_template("register.html")
 
     try: # how do I know whicherror to catch if I dont know which error will occur? duplication, connection error, syntax error...?
@@ -75,21 +73,19 @@ def login():
       flash("Please provide username and password.")
       return render_template("login.html")
     name = db.execute("SELECT name FROM users WHERE name= :name", {"name": request.form.get("username")}).fetchone()
-    print(f"I GOT THE NAME AS {name}")
 
     if not name:
       flash("No such user.")
       return render_template("login.html")
     hash = db.execute("SELECT hash FROM users WHERE name= :name", {"name": request.form.get("username")}).fetchone()
-    print(f"I GOT THE HASH AS {hash}")
+
     if not check_password_hash(hash[0], request.form.get("password")):
       flash("Incorrect password.")
       return render_template("login.html")
 
     # store user's sesh ID
     session["id"] = db.execute("SELECT id FROM users WHERE name= :name", {"name": name[0]}).fetchone()[0]
-    sid = session["id"]
-    print(f"I GOT SESH USER STORED AS {sid}")
+
     return render_template("index.html")
   else:
     return render_template("login.html")
@@ -151,3 +147,17 @@ def review(isbn):
       flash("You have already reviewed this book.")
       return redirect(url_for('view_book', isbn=isbn))
   return redirect(url_for('view_book', isbn=isbn))
+
+@app.route("/api/<isbn>", methods =["GET"]) #methods needed?
+def books_api(isbn):
+  # ensure isbn exists
+  book = db.execute("SELECT * FROM books WHERE isbn= :isbn", {"isbn": isbn}).fetchone()
+  if book is None:
+    return jsonify({"error": "ISBN not found"}), 404
+
+  # get review count and average rating
+  reviews = db.execute("SELECT AVG(rating) AS average_score, COUNT(*) AS review_count FROM reviews WHERE isbn= :isbn", {"isbn": isbn}).fetchone()
+  print (f"REVIEWS ARE: {reviews}")
+  avg_score = json.dumps(float(reviews.average_score))
+  print(f"AVERAGE SCORE: {avg_score}")
+  return jsonify({"title": book.title, "author": book.author, "year": book.year, "isbn": book.isbn, "review_count": reviews.review_count, "average_score": avg_score})
